@@ -1,0 +1,93 @@
+#+TITLE:NDebug
+#+SUBTITLE: A toolkit to construct interface-aware yet standard-compliant debugger hooks
+
+NDebug provides a small set of utilities to make graphical (or, rather non-REPL-resident) Common Lisp application easier to integrate with the standard Lisp debugger (~*debugger-hook*~, namely) and implementation-specific debugger hooks (via ~trivial-custom-debugger~), especially in the multi-threaded context.
+
+* Getting started
+** Installation
+
+NDebug is pretty light on dependencies:
+- [[https://github.com/Shinmera/dissect][Dissect]].
+- [[https://github.com/phoe/trivial-custom-debugger][trivial-custom-debugger]].
+- [[https://github.com/lmj/lparallel][Lparallel]].
+- [[https://github.com/slime/slime][Swank]].
+
+** Usage
+
+To make your application debugger-friendly, you can use the ~make-debugger-hook~ function. Most of its arguments are functions to call on a certain event, like UI rendering the condition or prompting the user about their input to the interactive restart. An example of that would be (implying some interface-related functions ~make-window~, ~make-button~, ~delete-window~, and ~prompt~)
+
+#+begin_src lisp
+  (defvar *prompt-text* "[prompt text]")
+
+  (defvar *window* nil)
+
+  ;; Don't forget to initialize lparallel!
+  (unless lparallel:*kernel*
+    (setf lparallel:*kernel* (lparallel:make-kernel 4)))
+
+  (let ((*debugger-hook*
+          (make-debugger-hook
+           :ui-display (lambda (wrapper)
+                         (setf
+                          ,*window*
+                          (make-window
+                           :text-contents (dissect:present
+                                           (ndebug:stack wrapper) nil)
+                           :buttons (loop for restart in (ndebug:restarts wrapper)
+                                          collect (make-button
+                                                   :label (restart-name restart)
+                                                   :action (lambda ()
+                                                             (submit-task (ndebug:channel wrapper)
+                                                                          (constantly restart))))))))
+           :ui-cleanup (lambda (wrapper)
+                         (declare (ignore wrapper))
+                         (delete-window *window*))
+           :query-write (lambda (wrapper string)
+                          (declare (ignore wrapper))
+                          (setf *prompt-text* string))
+           :query-read (lambda (wrapper)
+                         (declare (ignore wrapper))
+                         (prompt :text *prompt-text*)))))
+    (obviously-erroring-operation))
+#+end_src
+
+A slightly more involved, yet much cleaner, example could be subclassing the ~condition-wrapper~ to store all the auxiliary information inside it, and using ~with-debugger-hook~ for shorter hook construction.
+
+#+begin_src lisp
+  (defclass my-wrapper (ndebug:condition-wrapper)
+    ((prompt-text :initform "[prompt text]"
+                  :accessor prompt-text)
+     (debug-window :initform nil
+                   :accessor debug-window)))
+
+  ;; Don't forget to initialize lparallel!
+  (unless lparallel:*kernel*
+    (setf lparallel:*kernel* (lparallel:make-kernel 4)))
+
+  (ndebug:with-debugger-hook (:wrapper-class 'my-wrapper
+                              :ui-display (lambda (wrapper)
+                                            (setf
+                                             (debug-window wrapper)
+                                             (make-window
+                                              :text-contents (dissect:present
+                                                              (ndebug:stack wrapper) nil)
+                                              :buttons (loop for restart in (ndebug:restarts wrapper)
+                                                             collect (make-button
+                                                                      :label (restart-name restart)
+                                                                      :action (lambda ()
+                                                                                (submit-task (ndebug:channel wrapper)
+                                                                                             (constantly restart))))))))
+                              :ui-cleanup (lambda (wrapper)
+                                            (delete-window (debug-window wrapper)))
+                              :query-write (lambda (wrapper string)
+                                             (setf (prompt-text wrapper) string))
+                              :query-read (lambda (wrapper)
+                                            (prompt :text (prompt-text wrapper))))
+    (obviously-erroring-operation))
+#+end_src
+
+See the classes' and functions' documentation for more information.
+
+* To-Dos
+- [ ] Stop depending on Swank for two-way-stream construction, depend on ~trivial-gray-streams~ instead.
+- [ ] (Maybe) stop depending on Lparallel and depend on Bordeaux Thread semaphores/conditions instead.
