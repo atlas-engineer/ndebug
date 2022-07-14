@@ -15,8 +15,7 @@
     :initarg :restarts
     :accessor restarts
     :type list
-    :documentation "A list of restarts for the given condition.
-Stored in the format given by `compute-restarts'.")
+    :documentation "A list of `dissect:restart's for the given condition.")
    (channel
     :initform nil
     :initarg :channel
@@ -80,7 +79,7 @@ QUERY-READ and QUERY-WRITE should both be present (in which case
 prompting happens in the custom interface), or both absent (in which
 case the default `*query-io*' is used.)"
   (lambda (condition hook)
-    (let* ((restarts (compute-restarts condition))
+    (let* ((restarts (dissect:restarts))
            (channel (lparallel:make-channel :fixed-capacity 1))
            (wrapper (make-instance wrapper-class
                                    :condition-itself condition
@@ -98,8 +97,14 @@ case the default `*query-io*' is used.)"
         (funcall ui-display wrapper))
       (unwind-protect
            ;; FIXME: Waits indefinitely. Should it?
-           (let ((*debugger-hook* hook))
-             (invoke-restart-interactively (lparallel:receive-result channel)))
+           (let* ((*debugger-hook* hook)
+                  (restart (lparallel:receive-result channel)))
+             (invoke-restart-interactively
+              (etypecase restart
+                (dissect:restart (dissect:restart restart))
+                (restart restart)
+                (symbol (find-restart restart))
+                (function restart))))
         (when ui-cleanup
           (funcall ui-cleanup wrapper))))))
 
