@@ -101,7 +101,7 @@ case the default `*query-io*' is used.)"
                   (restart (lparallel:receive-result channel)))
              (invoke-restart-interactively
               (etypecase restart
-                (dissect:restart (dissect:restart restart))
+                (dissect:restart (dissect:object restart))
                 (restart restart)
                 (symbol (find-restart restart))
                 (function restart))))
