@@ -19,7 +19,6 @@
    (channel
     :initform nil
     :initarg :channel
-    :accessor channel
     :type (or null lparallel:channel)
     :documentation "The channel to signal the chosen restart through.")
    (stack
@@ -107,6 +106,20 @@ case the default `*query-io*' is used.)"
                 (function restart))))
         (when ui-cleanup
           (funcall ui-cleanup wrapper))))))
+
+(defgeneric invoke (wrapper restart)
+  (:method ((wrapper condition-wrapper) (restart symbol))
+    (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
+  (:method ((wrapper condition-wrapper) (dissect:restart symbol))
+    (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
+  (:method ((wrapper condition-wrapper) (restart restart))
+    (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
+  (:method ((wrapper condition-wrapper) (restart function))
+    (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
+  (:documentation "Invoke the RESTART in the initial debugger hook of the WRAPPER.
+
+The RESTART should be one of the `restarts' of the WRAPPER. Otherwise
+the behavior is implementation-dependent, but never exactly pretty."))
 
 (defmacro with-debugger-hook ((&rest args
                                &key wrapper-class query-read query-write ui-display ui-cleanup)

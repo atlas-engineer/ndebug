@@ -37,8 +37,7 @@ To make your application debugger-friendly, you can use the ~make-debugger-hook~
                                           collect (make-button
                                                    :label (restart-name restart)
                                                    :action (lambda ()
-                                                             (submit-task (ndebug:channel wrapper)
-                                                                          (constantly restart))))))))
+                                                             (ndebug:invoke wrapper restart)))))))
            :ui-cleanup (lambda (wrapper)
                          (declare (ignore wrapper))
                          (delete-window *window*))
@@ -75,8 +74,7 @@ A slightly more involved, yet much cleaner, example could be subclassing the ~co
                                                              collect (make-button
                                                                       :label (restart-name restart)
                                                                       :action (lambda ()
-                                                                                (submit-task (ndebug:channel wrapper)
-                                                                                             (constantly restart))))))))
+                                                                                (ndebug:invoke wrapper restart)))))))
                               :ui-cleanup (lambda (wrapper)
                                             (delete-window (debug-window wrapper)))
                               :query-write (lambda (wrapper string)

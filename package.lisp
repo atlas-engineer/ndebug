@@ -7,8 +7,8 @@
    #:condition-wrapper
    #:condition-itself
    #:restarts
-   #:channel
    #:stack
+   #:invoke
    #:make-debugger-stream
    #:make-debugger-hook
    #:with-debugger-hook)
@@ -17,14 +17,19 @@
 `ndebug:condition-wrapper' as a class to encapsulate all the
 meta-information about the condition, otherwise only available in the
 debugger hook. With this class, NDebug can pass condition to be
-handled elsewhere, including the graphical debugger. Important slots:
+handled elsewhere, including the graphical debugger. Important methods/slots:
 - `ndebug:condition-itself' as a condition debugger got.
 - `ndebug:restarts' as a list of CL restarts connected to the
   condition.
 - `ndebug:stack' as a list of `dissect:call's representing the call
   stack state at the moment of condition signalling.
-- `ndebug:channel' as an internal channel to pass the chosen restart
-  through.
+- `ndebug::channel' as an internal channel to pass the chosen restart
+  through. Prefer `ndebug:invoke' instead, to be safe from API
+  changing underneath you.
+
+`ndebug:invoke' safely passes the chosen restart back to the debugger
+hook, no matter where the passing happens from. Pass it the restart
+you've chosen in the UI -- and you're good!
 
 `ndebug:make-debugger-stream' constructs a `*query-io*'-friendly
 stream based on the input and output functions passed to it. For now,
