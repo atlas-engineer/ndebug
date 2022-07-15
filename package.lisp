@@ -10,4 +10,5 @@
    #:channel
    #:stack
    #:make-debugger-stream
-   #:make-debugger-hook))
+   #:make-debugger-hook
+   #:with-debugger-hook))
