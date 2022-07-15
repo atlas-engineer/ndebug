@@ -64,23 +64,19 @@ A slightly more involved, yet much cleaner, example could be subclassing the ~co
     (setf lparallel:*kernel* (lparallel:make-kernel 4)))
 
   (ndebug:with-debugger-hook (:wrapper-class 'my-wrapper
-                              :ui-display (lambda (wrapper)
-                                            (setf
-                                             (debug-window wrapper)
-                                             (make-window
-                                              :text-contents (dissect:present
-                                                              (ndebug:stack wrapper) nil)
-                                              :buttons (loop for restart in (ndebug:restarts wrapper)
-                                                             collect (make-button
-                                                                      :label (restart-name restart)
-                                                                      :action (lambda ()
-                                                                                (ndebug:invoke wrapper restart)))))))
-                              :ui-cleanup (lambda (wrapper)
-                                            (delete-window (debug-window wrapper)))
-                              :query-write (lambda (wrapper string)
-                                             (setf (prompt-text wrapper) string))
-                              :query-read (lambda (wrapper)
-                                            (prompt :text (prompt-text wrapper))))
+                              :ui-display (setf
+                                           (debug-window %wrapper%)
+                                           (make-window
+                                            :text-contents (dissect:present (ndebug:stack %wrapper%) nil)
+                                            :buttons (loop for restart in (ndebug:restarts wrapper)
+                                                           collect (make-button
+                                                                    :label (restart-name restart)
+                                                                    :action (lambda ()
+                                                                              (ndebug:invoke
+                                                                               %wrapper% restart))))))
+                              :ui-cleanup (delete-window (debug-window %wrapper%))
+                              :query-write (setf (prompt-text %wrapper%) %string%)
+                              :query-read (prompt :text (prompt-text %wrapper%)))
     (obviously-erroring-operation))
 #+end_src
 

@@ -121,11 +121,42 @@ case the default `*query-io*' is used.)"
 The RESTART should be one of the `restarts' of the WRAPPER. Otherwise
 the behavior is implementation-dependent, but never exactly pretty."))
 
-(defmacro with-debugger-hook ((&rest args
-                               &key wrapper-class query-read query-write ui-display ui-cleanup)
+(defmacro with-debugger-hook ((&key wrapper-class query-read query-write ui-display ui-cleanup)
                               &body body)
   "Execute the BODY with the newly-created (as per `make-debugger-hook') debugger hook.
-The ARGS are regular `make-debugger-hook' arguments passed to it as-is."
+
+The ARGS are `make-debugger-hook' arguments passed to it with the
+following rules:
+- If the argument form starts with a `lambda' or `function' (which
+  sharp-quote expands to), pass it to `make-debugger-hook' as-is.
+- If not, then wrap it in a lambda with a special variable
+  %WRAPPER% (and %STRING% in case of :QUERY-WRITE) accessible to the
+  argument form.
+
+Example:"
   (declare (ignorable wrapper-class query-read query-write ui-display ui-cleanup))
-  `(trivial-custom-debugger:with-debugger ((make-debugger-hook ,@args))
-     ,@body))
+  (flet ((wrap-lambda-maybe (form)
+           (list (if (member (first form) '(lambda function))
+                     form
+                     `(lambda (,(alexandria:symbolicate "%WRAPPER%"))
+                        (declare (ignorable ,(alexandria:symbolicate "%WRAPPER%")))
+                        ,form)))))
+    `(trivial-custom-debugger:with-debugger
+         ((make-debugger-hook
+           ,@(when wrapper-class
+               (list wrapper-class))
+           ,@(when query-read
+               (wrap-lambda-maybe query-read))
+           ,@(when query-write
+               (list (if (member (first query-write) '(lambda function))
+                         query-write
+                         `(lambda (,(alexandria:symbolicate "%WRAPPER%")
+                                   ,(alexandria:symbolicate "%STRING%"))
+                            (declare (ignorable ,(alexandria:symbolicate "%WRAPPER%")
+                                                ,(alexandria:symbolicate "%STRING%")))
+                            ,query-write))))
+           ,@(when ui-display
+               (wrap-lambda-maybe ui-display))
+           ,@(when ui-cleanup
+               (wrap-lambda-maybe ui-cleanup))))
+       ,@body)))
