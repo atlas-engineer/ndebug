@@ -85,3 +85,5 @@ See the classes' and functions' documentation for more information.
 * To-Dos
 - [ ] Stop depending on Swank for two-way-stream construction, depend on ~trivial-gray-streams~ instead.
 - [ ] (Maybe) stop depending on Lparallel and depend on Bordeaux Thread semaphores/conditions instead.
+- [ ] Better names for handlers?
+- [ ] Use methods to specialize the behavior?
