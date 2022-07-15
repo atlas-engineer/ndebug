@@ -88,7 +88,10 @@ case the default `*query-io*' is used.)"
            (*query-io* (if (and query-read query-write)
                            (make-debugger-stream
                             (lambda ()
-                              (funcall query-read wrapper))
+                              (let ((result (funcall query-read wrapper)))
+                                (if (uiop:string-suffix-p result #\newline)
+                                    result
+                                    (uiop:strcat result #\newline))))
                             (lambda (string)
                               (funcall query-write wrapper string)))
                            *query-io*)))
