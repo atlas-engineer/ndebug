@@ -110,7 +110,7 @@ case the default `*query-io*' is used.)"
 (defgeneric invoke (wrapper restart)
   (:method ((wrapper condition-wrapper) (restart symbol))
     (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
-  (:method ((wrapper condition-wrapper) (dissect:restart symbol))
+  (:method ((wrapper condition-wrapper) (restart dissect:restart))
     (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
   (:method ((wrapper condition-wrapper) (restart restart))
     (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
