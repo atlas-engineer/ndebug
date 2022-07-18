@@ -13,44 +13,11 @@ NDebug is pretty light on dependencies:
 - [[https://github.com/slime/slime][Swank]].
 
 ** Usage
+NDebug has two API layers: CLOS API and a globals&functions API. The CLOS API is more structured and I recommend to use it in most cases, while the globals&functions API overrides the CLOS methods and allows to customize the solid base CLOS provides. globals&functions is more REPL-friendly, so you may start your debugger with this, while transitioning to the CLOS API later.
 
-To make your application debugger-friendly, you can use the ~make-debugger-hook~ function. Most of its arguments are functions to call on a certain event, like UI rendering the condition or prompting the user about their input to the interactive restart. An example of that would be (implying some interface-related functions ~make-window~, ~make-button~, ~delete-window~, and ~prompt~)
+*** CLOS API
 
-#+begin_src lisp
-  (defvar *prompt-text* "[prompt text]")
-
-  (defvar *window* nil)
-
-  ;; Don't forget to initialize lparallel!
-  (unless lparallel:*kernel*
-    (setf lparallel:*kernel* (lparallel:make-kernel 4)))
-
-  (let ((*debugger-hook*
-          (make-debugger-hook
-           :ui-display (lambda (wrapper)
-                         (setf
-                          ,*window*
-                          (make-window
-                           :text-contents (dissect:present
-                                           (ndebug:stack wrapper) nil)
-                           :buttons (loop for restart in (ndebug:restarts wrapper)
-                                          collect (make-button
-                                                   :label (restart-name restart)
-                                                   :action (lambda ()
-                                                             (ndebug:invoke wrapper restart)))))))
-           :ui-cleanup (lambda (wrapper)
-                         (declare (ignore wrapper))
-                         (delete-window *window*))
-           :query-write (lambda (wrapper string)
-                          (declare (ignore wrapper))
-                          (setf *prompt-text* string))
-           :query-read (lambda (wrapper)
-                         (declare (ignore wrapper))
-                         (prompt :text *prompt-text*)))))
-    (obviously-erroring-operation))
-#+end_src
-
-A slightly more involved, yet much cleaner, example could be subclassing the ~condition-wrapper~ to store all the auxiliary information inside it, and using ~with-debugger-hook~ for shorter hook construction.
+To make your application debugger-friendly, you have to specialize ~ui-display~, ~ui-cleanup~, ~query-read~ and ~query-write~ methods (the latter two are not required and will be replaced with ~*query-io*~ if not present). And then use the ~make-debugger-hook~ function to set the debugger.
 
 #+begin_src lisp
   (defclass my-wrapper (ndebug:condition-wrapper)
@@ -59,31 +26,75 @@ A slightly more involved, yet much cleaner, example could be subclassing the ~co
      (debug-window :initform nil
                    :accessor debug-window)))
 
+  (defmethod ndebug:query-read ((wrapper my-wrapper))
+    (prompt :text (prompt-text wrapper)))
+
+  (defmethod ndebug:query-write ((wrapper my-wrapper) (string string))
+    (setf (prompt-text wrapper) string))
+
+  (defmethod ndebug:ui-display ((wrapper my-wrapper))
+    (setf (debug-window wrapper)
+          (make-windown :text-contents (dissect:present (ndebug:stack wrapper) nil)
+                        :buttons (loop for restart in (ndebug:restarts wrapper)
+                                       collect (make-button
+                                                :label (restart-name restart)
+                                                :action (lambda ()
+                                                          (ndebug:invoke wrapper restart)))))))
+
+  (defmethod ndebug:ui-cleanup ((wrapper my-wrapper))
+    (delete-window (debug-window wrapper)))
+
+  ;; Don't forget to initialize lparallel! It's used to pass the condition between threads.
+  (unless lparallel:*kernel*
+    (setf lparallel:*kernel* (lparallel:make-kernel 4)))
+
+  (ndebug:with-debugger-hook (:wrapper-class 'my-wrapper)
+    (obviously-erroring-operation))
+#+end_src
+
+*** Globals&functions API
+
+With globals&function API you have a bit more flexibility in how you configure the debugger. You can ~let~-bind or ~flet~-bind special variables (~ndebug:*query-read*~, ~ndebug:*query-write*~, ~ndebug:*ui-display*~, ~ndebug:*ui-cleanup*~), you can ~setf~ them, you can provide them as arguments to ~ndebug:make-debugger-hook~ or ~ndebug:with-debugger-hook~. The possibilities are endless, although it tends to look less structured than the CLOS API.
+
+#+begin_src lisp
+
+  (defvar *prompt-text* "[prompt text]")
+
+  (defvar *window* nil)
+
   ;; Don't forget to initialize lparallel!
   (unless lparallel:*kernel*
     (setf lparallel:*kernel* (lparallel:make-kernel 4)))
 
-  (ndebug:with-debugger-hook (:wrapper-class 'my-wrapper
-                              :ui-display (setf
-                                           (debug-window %wrapper%)
-                                           (make-window
-                                            :text-contents (dissect:present (ndebug:stack %wrapper%) nil)
-                                            :buttons (loop for restart in (ndebug:restarts wrapper)
-                                                           collect (make-button
-                                                                    :label (restart-name restart)
-                                                                    :action (lambda ()
-                                                                              (ndebug:invoke
-                                                                               %wrapper% restart))))))
-                              :ui-cleanup (delete-window (debug-window %wrapper%))
-                              :query-write (setf (prompt-text %wrapper%) %string%)
-                              :query-read (prompt :text (prompt-text %wrapper%)))
-    (obviously-erroring-operation))
+  (defun show-wrapper-window (wrapper)
+    (setf
+     ,*window*
+     (make-window
+      :text-contents (dissect:present (ndebug:stack wrapper) nil)
+      :buttons (loop for restart in (ndebug:restarts wrapper)
+                     collect (make-button
+                              :label (restart-name restart)
+                              :action (lambda ()
+                                        (ndebug:invoke wrapper restart)))))))
+
+  (let ((ndebug:*query-read* (lambda (wrapper)
+                               (declare (ignore wrapper))
+                               (prompt :text *prompt-text*))))
+    (flet ((cleanup (wrapper)
+             (declare (ignore wrapper))
+             (delete-window *window*)))
+      (setf ndebug:*ui-cleanup* #'cleanup))
+    (ndebug:with-debugger-hook
+        (:ui-display #'show-wrapper-window
+         :query-write (setf *prompt-text* %string%))
+      (obviously-erroring-operation)))
 #+end_src
+** Mixing the two
 
-See the classes' and functions' documentation for more information.
-
+The good thing about these API is that you can intermix those. So, you can subclass the ~ndebug:condition-wrapper~, define some methods on it and then, if there's some corner case (like needing a custom display or custom reading function), you can always provide an addition argument to ~make-debugger-hook~ to override the initial method.
 * To-Dos
 - [ ] Stop depending on Swank for two-way-stream construction, depend on ~trivial-gray-streams~ instead.
 - [ ] (Maybe) stop depending on Lparallel and depend on Bordeaux Thread semaphores/conditions instead.
 - [ ] Better names for handlers?
-- [ ] Use methods to specialize the behavior?
+- [X] Use methods to specialize the behavior?=
+- [ ] (Maybe) allow falling back to ~*query-io*~ by providing ~nil~ as both ~:query-write~ and ~:query-read~.

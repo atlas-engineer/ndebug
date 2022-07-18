@@ -3,6 +3,15 @@
 
 (in-package #:ndebug)
 
+(defvar *query-write* nil
+  "A function/lambda to unconditionally override/alter the `query-write' call.")
+(defvar *query-read* nil
+  "A function/lambda to unconditionally override/alter the `query-read' call.")
+(defvar *ui-display* nil
+  "A function/lambda to unconditionally override/alter the `ui-display' call.")
+(defvar *ui-cleanup* nil
+  "A function/lambda to unconditionally override/alter the `ui-cleanup' call.")
+
 (defclass condition-wrapper ()
   ((condition-itself
     :initform (error "condition-wrapper should always wrap a condition.")
@@ -32,6 +41,45 @@ A list of `dissect:call' objects."))
 Made so that `*debugger-hook*' can wait for the condition to be resolved based on
 the `channel', wrapped alongside the condition and its restarts."))
 
+(defgeneric query-write (wrapper string)
+  (:method ((wrapper condition-wrapper) (string string))
+    nil)
+  (:method :around (wrapper string)
+    (if *query-write*
+        (funcall *query-write* wrapper string)
+        (call-next-method)))
+  (:documentation "The function to call as part of custom `*query-io*' when prompting the user.
+Always prefers `*query-write*' (if set) over the default method."))
+
+(defgeneric query-read (wrapper)
+  (:method ((wrapper condition-wrapper))
+    nil)
+  (:method :around (wrapper)
+    (if *query-read*
+        (funcall *query-read* wrapper)
+        (call-next-method)))
+  (:documentation "The function to call as part of custom `*query-io*' when getting user input.
+Always prefers `*query-read*' (if set) over the default method."))
+
+(defgeneric ui-display (wrapper)
+  (:method ((wrapper condition-wrapper))
+    nil)
+  (:method :around (wrapper)
+    (if *ui-display*
+        (funcall *ui-display* wrapper)
+        (call-next-method)))
+  (:documentation "Part of custom debugger, called when showing the condition to the user.
+Always prefers `*ui-display*' (if set) over the default method."))
+
+(defgeneric ui-cleanup (wrapper)
+  (:method ((wrapper condition-wrapper)))
+  (:method :around (wrapper)
+    (if *ui-cleanup*
+        (funcall *ui-cleanup* wrapper)
+        (call-next-method)))
+  (:documentation "Part of custom debugger, called once the debugger is done.
+Always prefers `*ui-cleanup*' (if set) over the default method."))
+
 (declaim (ftype (function ((function () string) (function (string))) two-way-stream)
                 make-debugger-stream))
 (defun make-debugger-stream (input-fn output-fn)
@@ -42,13 +90,14 @@ the `channel', wrapped alongside the condition and its restarts."))
    (swank-backend:make-output-stream output-fn)))
 
 (declaim (ftype (function (&key (:wrapper-class t)
-                                (:query-read (or null (function (condition-wrapper) string)))
-                                (:query-write (or null (function (condition-wrapper string))))
                                 (:ui-display (or null (function (condition-wrapper))))
-                                (:ui-cleanup (or null (function (condition-wrapper))))))
+                                (:ui-cleanup (or null (function (condition-wrapper))))
+                                (:query-read (or null (function (condition-wrapper) string)))
+                                (:query-write (or null (function (condition-wrapper string))))))
                 make-debugger-hook))
 (defun make-debugger-hook (&key (wrapper-class 'condition-wrapper)
-                             query-read query-write ui-display ui-cleanup)
+                             (ui-display *ui-display*) (ui-cleanup *ui-cleanup*)
+                             (query-read *query-read*) (query-write *query-write*))
   "Construct a `*debugger-hook*'-compatible function with multi-threading and UI interaction.
 
 WRAPPER-CLASS is a class designator for the class to wrap the
@@ -56,16 +105,21 @@ condition in. Defaults to `condition-wrapper'. WRAPPER-CLASS
 designated class must inherit from `condition-wrapper'.
 
 UI-DISPLAY is a function to invoke when showing the debugger
-window/prompt/query. Is called with a condition wrapper to display.
+window/prompt/query. Is called with a condition wrapper to
+display. Overrides a `ui-display' method (if present), defined for the
+WRAPPER-CLASS.
 
 UI-CLEANUP is a function to invoke after the debugging is done and the
 interface is in need of cleaning up (like removing debug windows or
-flushing the shell.) Accepts a condition wrapper to clean up after.
+flushing the shell.) Accepts a condition wrapper to clean up
+after. Overrides a `ui-cleanup' method (if present), defined for the
+WRAPPER-CLASS.
 
 QUERY-READ is a function to invoke when querying the user, like
 opening a an input window or waiting for shell input. Must return an
 inputted string. The only argument is the condition wrapper for a
-related condition.
+related condition. Overrides a `query-read' method (if present),
+defined for the WRAPPER-CLASS.
 
 QUERY-WRITE is a unary function to invoke when showing the user the
 prompting text, like when opening a dialogue window or writing to the
@@ -73,6 +127,8 @@ shell. Can refer to the outside state to interface with the
 QUERY-READ. The arguments are:
 - Condition wrapper for the current condition.
 - The string to show to the user.
+Overrides a `query-write' method (if present), defined for the
+WRAPPER-CLASS.
 
 QUERY-READ and QUERY-WRITE should both be present (in which case
 prompting happens in the custom interface), or both absent (in which
@@ -85,30 +141,38 @@ case the default `*query-io*' is used.)"
                                    :restarts restarts
                                    :channel channel
                                    :stack (dissect:stack)))
-           (*query-io* (if (and query-read query-write)
+           (*query-io* (if (or (and (ignore-errors (find-method #'query-read nil (list wrapper-class)))
+                                    (ignore-errors (find-method #'query-write nil (list wrapper-class 'string))))
+                               (and query-read query-write))
                            (make-debugger-stream
                             (lambda ()
-                              (let ((result (funcall query-read wrapper)))
+                              (let* ((*query-read* query-read)
+                                     (result (query-read wrapper)))
                                 (if (uiop:string-suffix-p result #\newline)
                                     result
                                     (uiop:strcat result #\newline))))
                             (lambda (string)
-                              (funcall query-write wrapper string)))
+                              (let ((*query-write* query-write))
+                                (query-write wrapper string))))
                            *query-io*)))
-      (when ui-display
-        (funcall ui-display wrapper))
+      (when (or (ignore-errors (find-method #'ui-display nil (list wrapper-class)))
+                ui-display)
+        (let ((*ui-display* ui-display))
+          (ui-display wrapper)))
       (unwind-protect
            ;; FIXME: Waits indefinitely. Should it?
-           (let* ((*debugger-hook* hook)
-                  (restart (lparallel:receive-result channel)))
+           (let ((restart (lparallel:receive-result channel))
+                 (*debugger-hook* hook))
              (invoke-restart-interactively
               (etypecase restart
                 (dissect:restart (dissect:object restart))
                 (restart restart)
                 (symbol (find-restart restart))
                 (function restart))))
-        (when ui-cleanup
-          (funcall ui-cleanup wrapper))))))
+        (when (or (ignore-errors (find-method #'ui-cleanup nil (list wrapper-class)))
+                  ui-cleanup)
+          (let ((*ui-cleanup* ui-cleanup))
+            (ui-cleanup wrapper)))))))
 
 (defgeneric invoke (wrapper restart)
   (:method ((wrapper condition-wrapper) (restart symbol))

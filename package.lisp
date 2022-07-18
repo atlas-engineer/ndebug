@@ -8,6 +8,14 @@
    #:condition-itself
    #:restarts
    #:stack
+   #:*query-read*
+   #:*query-write*
+   #:*ui-display*
+   #:*ui-cleanup*
+   #:query-read
+   #:query-write
+   #:ui-display
+   #:ui-cleanup
    #:invoke
    #:make-debugger-stream
    #:make-debugger-hook
@@ -26,6 +34,10 @@ handled elsewhere, including the graphical debugger. Important methods/slots:
 - `ndebug::channel' as an internal channel to pass the chosen restart
   through. Prefer `ndebug:invoke' instead, to be safe from API
   changing underneath you.
+- `ndebug:query-read' and `ndebug:query-write' to provide your own
+  alternative to `*query-io*' reading/writing facilities
+- `ndebug:ui-display' to show the wrapped condition on your UI.
+- `ndebug:ui-cleanup' to cleanup after handling the condition.
 
 `ndebug:invoke' safely passes the chosen restart back to the debugger
 hook, no matter where the passing happens from. Pass it the restart
@@ -38,10 +50,10 @@ it's a thin wrapper around the `swank-backend:make-input-stream' and
 
 `ndebug:make-debugger-hook' constructs the UI-aware debugger so that
 thing you have to provide is a set of functions to:
-- Query the user (:QUERY-READ).
-- Show the user debugger prompt (:QUERY-WRITE).
-- Show the condition in the UI (:UI-DISPLAY).
-- Clean the UI after the condition is handled (:UI-DISPLAY).
+- Query the user (:QUERY-READ, overrides the `ndebug:query-read').
+- Show the user debugger prompt (:QUERY-WRITE, overrides the `ndebug:query-write').
+- Show the condition in the UI (:UI-DISPLAY, overrides the `ndebug:ui-display').
+- Clean the UI after the condition is handled (:UI-CLEANUP, overrides the `ndebug:ui-cleanup').
 
 Additionally `ndebug:make-debugger-hook' accepts a :WRAPPER-CLASS so
 that you can provide your own wrapper class instead of
