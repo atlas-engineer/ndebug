@@ -147,11 +147,12 @@ Example:"
     `(trivial-custom-debugger:with-debugger
          ((make-debugger-hook
            ,@(when wrapper-class
-               (list wrapper-class))
+               (list :wrapper-class wrapper-class))
            ,@(when query-read
-               (wrap-lambda-maybe query-read))
+               (cons :query-read (wrap-lambda-maybe query-read)))
            ,@(when query-write
-               (list (if (member (first query-write) '(lambda function))
+               (list :query-write
+                     (if (member (first query-write) '(lambda function))
                          query-write
                          `(lambda (,(alexandria:symbolicate "%WRAPPER%")
                                    ,(alexandria:symbolicate "%STRING%"))
@@ -159,7 +160,7 @@ Example:"
                                                 ,(alexandria:symbolicate "%STRING%")))
                             ,query-write))))
            ,@(when ui-display
-               (wrap-lambda-maybe ui-display))
+               (cons :ui-display (wrap-lambda-maybe ui-display)))
            ,@(when ui-cleanup
-               (wrap-lambda-maybe ui-cleanup))))
+               (cons :ui-cleanup (wrap-lambda-maybe ui-cleanup)))))
        ,@body)))
