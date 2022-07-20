@@ -10,3 +10,14 @@
   :depends-on (#:dissect #:trivial-custom-debugger #:lparallel #:swank)
   :components ((:file "package")
                (:file "ndebug")))
+
+(defsystem "ndebug/tests"
+  :depends-on (ndebug lisp-unit2)
+  :serial t
+  :components ((:file "tests/package")
+               (:file "tests/tests"))
+  :perform (test-op (o c)
+                    (symbol-call :lisp-unit2 :run-tests
+                                 :package :ndebug/tests
+                                 :run-contexts (symbol-function
+                                                (read-from-string "lisp-unit2:with-summary-context")))))
