@@ -147,17 +147,20 @@ case the default `*query-io*' is used.)"
                            (make-debugger-stream
                             (lambda ()
                               (let* ((*query-read* query-read)
+                                     (*debugger-hook* nil)
                                      (result (query-read wrapper)))
                                 (if (uiop:string-suffix-p result #\newline)
                                     result
                                     (uiop:strcat result #\newline))))
                             (lambda (string)
-                              (let ((*query-write* query-write))
+                              (let ((*query-write* query-write)
+                                    (*debugger-hook* nil))
                                 (query-write wrapper string))))
                            *query-io*)))
       (when (or (ignore-errors (find-method #'ui-display nil (list wrapper-class)))
                 ui-display)
-        (let ((*ui-display* ui-display))
+        (let ((*ui-display* ui-display)
+              (*debugger-hook* nil))
           (ui-display wrapper)))
       (unwind-protect
            ;; FIXME: Waits indefinitely. Should it?
@@ -171,7 +174,8 @@ case the default `*query-io*' is used.)"
                 (function restart))))
         (when (or (ignore-errors (find-method #'ui-cleanup nil (list wrapper-class)))
                   ui-cleanup)
-          (let ((*ui-cleanup* ui-cleanup))
+          (let ((*ui-cleanup* ui-cleanup)
+                (*debugger-hook* nil))
             (ui-cleanup wrapper)))))))
 
 (defgeneric invoke (wrapper restart)
