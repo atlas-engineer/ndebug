@@ -3,9 +3,11 @@
 
 (in-package #:ndebug/tests)
 
+(defvar what "hello")
+
 (defun error-with-ignore ()
   (restart-case
-      (1+ "hello")
+      (1+ what)
     (ignore () "hello1")
     (ignore2 () "hello2")))
 
