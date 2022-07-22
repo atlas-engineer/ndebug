@@ -5,11 +5,9 @@
 
 (setf lparallel:*kernel* (lparallel:make-kernel 1))
 
-(defvar what "hello")
-
 (defun error-with-ignore ()
   (restart-case
-      (1+ what)
+      (1+ "hello")
     (ignore () "hello1")
     (ignore2 () "hello2")))
 
