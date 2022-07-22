@@ -22,22 +22,22 @@
    #:with-debugger-hook)
   (:documentation "NDebug provides several primitives to work with UI-aware debuggers:
 
-`ndebug:condition-wrapper' as a class to encapsulate all the
+`ndebug:condition-wrapper' is a class to encapsulate all the
 meta-information about the condition, otherwise only available in the
 debugger hook. With this class, NDebug can pass condition to be
 handled elsewhere, including the graphical debugger. Important methods/slots:
-- `ndebug:condition-itself' as a condition debugger got.
+- `ndebug:condition-itself' as a condition the debugger got.
 - `ndebug:restarts' as a list of CL restarts connected to the
   condition.
 - `ndebug:stack' as a list of `dissect:call's representing the call
   stack state at the moment of condition signalling.
 - `ndebug::channel' as an internal channel to pass the chosen restart
-  through. Prefer `ndebug:invoke' instead, to be safe from API
-  changing underneath you.
+  through. Prefer `ndebug:invoke' instead, to be safe from future API
+  changes.
 - `ndebug:query-read' and `ndebug:query-write' to provide your own
   alternative to `*query-io*' reading/writing facilities
 - `ndebug:ui-display' to show the wrapped condition on your UI.
-- `ndebug:ui-cleanup' to cleanup after handling the condition.
+- `ndebug:ui-cleanup' to clean up after handling the condition.
 
 `ndebug:invoke' safely passes the chosen restart back to the debugger
 hook, no matter where the passing happens from. Pass it the restart

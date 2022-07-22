@@ -1,7 +1,7 @@
 #+TITLE:NDebug
 #+SUBTITLE: A toolkit to construct interface-aware yet standard-compliant debugger hooks
 
-NDebug provides a small set of utilities to make graphical (or, rather non-REPL-resident) Common Lisp application easier to integrate with the standard Lisp debugger (~*debugger-hook*~, namely) and implementation-specific debugger hooks (via ~trivial-custom-debugger~), especially in the multi-threaded context.
+NDebug provides a small set of utilities to make graphical (or, rather non-REPL-resident) Common Lisp applications easier to integrate with the standard Lisp debugger (~*debugger-hook*~, namely) and implementation-specific debugger hooks (via ~trivial-custom-debugger~), especially in a multi-threaded context.
 
 * Getting started
 ** Installation
@@ -57,7 +57,6 @@ To make your application debugger-friendly, you have to specialize ~ui-display~,
 With globals&function API you have a bit more flexibility in how you configure the debugger. You can ~let~-bind or ~flet~-bind special variables (~ndebug:*query-read*~, ~ndebug:*query-write*~, ~ndebug:*ui-display*~, ~ndebug:*ui-cleanup*~), you can ~setf~ them, you can provide them as arguments to ~ndebug:make-debugger-hook~ or ~ndebug:with-debugger-hook~. The possibilities are endless, although it tends to look less structured than the CLOS API.
 
 #+begin_src lisp
-
   (defvar *prompt-text* "[prompt text]")
 
   (defvar *window* nil)
@@ -89,12 +88,14 @@ With globals&function API you have a bit more flexibility in how you configure t
          :query-write (setf *prompt-text* %string%))
       (obviously-erroring-operation)))
 #+end_src
+
 ** Mixing the two
 
-The good thing about these API is that you can intermix those. So, you can subclass the ~ndebug:condition-wrapper~, define some methods on it and then, if there's some corner case (like needing a custom display or custom reading function), you can always provide an addition argument to ~make-debugger-hook~ to override the initial method.
+The good thing about these API is that you can intermix those. So, you can subclass the ~ndebug:condition-wrapper~, define some methods on it and then, if there's some corner case (like needing a custom display or custom reading function), you can always provide an additional argument to ~make-debugger-hook~ to override the initial method.
+
 * To-Dos
 - [ ] Stop depending on Swank for two-way-stream construction, depend on ~trivial-gray-streams~ instead.
 - [ ] (Maybe) stop depending on Lparallel and depend on Bordeaux Thread semaphores/conditions instead.
 - [ ] Better names for handlers?
-- [X] Use methods to specialize the behavior?=
+- [X] Use methods to specialize the behavior?
 - [ ] (Maybe) allow falling back to ~*query-io*~ by providing ~nil~ as both ~:query-write~ and ~:query-read~.
