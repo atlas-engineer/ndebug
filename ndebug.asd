@@ -5,7 +5,7 @@
   :description "A toolkit to construct interface-aware yet standard-compliant debugger hooks."
   :author "Atlas Engineer LLC"
   :license  "BSD 3-Clause"
-  :version "0.0.1"
+  :version "0.1.0"
   :serial t
   :depends-on (#:dissect #:trivial-custom-debugger #:bordeaux-threads #:swank)
   :components ((:file "package")
