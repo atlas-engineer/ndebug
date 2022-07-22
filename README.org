@@ -9,7 +9,7 @@ NDebug provides a small set of utilities to make graphical (or, rather non-REPL-
 NDebug is pretty light on dependencies:
 - [[https://github.com/Shinmera/dissect][Dissect]].
 - [[https://github.com/phoe/trivial-custom-debugger][trivial-custom-debugger]].
-- [[https://github.com/lmj/lparallel][Lparallel]].
+- [[https://github.com/sionescu/bordeaux-threads][Bordeaux Threads]].
 - [[https://github.com/slime/slime][Swank]].
 
 ** Usage
@@ -44,10 +44,6 @@ To make your application debugger-friendly, you have to specialize ~ui-display~,
   (defmethod ndebug:ui-cleanup ((wrapper my-wrapper))
     (delete-window (debug-window wrapper)))
 
-  ;; Don't forget to initialize lparallel! It's used to pass the condition between threads.
-  (unless lparallel:*kernel*
-    (setf lparallel:*kernel* (lparallel:make-kernel 4)))
-
   (ndebug:with-debugger-hook (:wrapper-class 'my-wrapper)
     (obviously-erroring-operation))
 #+end_src
@@ -60,10 +56,6 @@ With globals&function API you have a bit more flexibility in how you configure t
   (defvar *prompt-text* "[prompt text]")
 
   (defvar *window* nil)
-
-  ;; Don't forget to initialize lparallel!
-  (unless lparallel:*kernel*
-    (setf lparallel:*kernel* (lparallel:make-kernel 4)))
 
   (defun show-wrapper-window (wrapper)
     (setf
@@ -95,7 +87,8 @@ The good thing about these API is that you can intermix those. So, you can subcl
 
 * To-Dos
 - [ ] Stop depending on Swank for two-way-stream construction, depend on ~trivial-gray-streams~ instead.
-- [ ] (Maybe) stop depending on Lparallel and depend on Bordeaux Thread semaphores/conditions instead.
+- [X] (Maybe) stop depending on Lparallel and depend on Bordeaux Thread semaphores/conditions instead.
+  - Semaphores it is!
 - [ ] Better names for handlers?
 - [X] Use methods to specialize the behavior?
 - [ ] (Maybe) allow falling back to ~*query-io*~ by providing ~nil~ as both ~:query-write~ and ~:query-read~.

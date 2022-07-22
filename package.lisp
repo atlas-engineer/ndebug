@@ -25,15 +25,19 @@
 `ndebug:condition-wrapper' is a class to encapsulate all the
 meta-information about the condition, otherwise only available in the
 debugger hook. With this class, NDebug can pass condition to be
-handled elsewhere, including the graphical debugger. Important methods/slots:
+handled elsewhere, including the graphical debugger.
+
+Important slots:
 - `ndebug:condition-itself' as a condition the debugger got.
 - `ndebug:restarts' as a list of CL restarts connected to the
   condition.
 - `ndebug:stack' as a list of `dissect:call's representing the call
   stack state at the moment of condition signalling.
-- `ndebug::channel' as an internal channel to pass the chosen restart
-  through. Prefer `ndebug:invoke' instead, to be safe from future API
-  changes.
+- `ndebug::restart-semaphore' and `ndebug::chosen-restart' as internal
+  details of multi-threaded restart passing. Prefer `ndebug:invoke'
+  instead, to be safe from future API changes.
+
+Important methods:
 - `ndebug:query-read' and `ndebug:query-write' to provide your own
   alternative to `*query-io*' reading/writing facilities
 - `ndebug:ui-display' to show the wrapped condition on your UI.

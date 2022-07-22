@@ -25,11 +25,13 @@
     :accessor restarts
     :type list
     :documentation "A list of `dissect:restart's for the given condition.")
-   (channel
+   (chosen-restart
     :initform nil
-    :initarg :channel
-    :type (or null lparallel:channel)
-    :documentation "The channel to signal the chosen restart through.")
+    :documentation "The restart chosen in the interface and brought by `invoke'.")
+   (restart-semaphore
+    :initform (bt:make-semaphore)
+    :type bt:semaphore
+    :documentation "The semaphore to wait on until the restart is returned.")
    (stack
     :initform nil
     :initarg :stack
@@ -135,11 +137,9 @@ prompting happens in the custom interface), or both absent (in which
 case the default `*query-io*' is used.)"
   (lambda (condition hook)
     (let* ((restarts (dissect:restarts))
-           (channel (lparallel:make-channel :fixed-capacity 1))
            (wrapper (make-instance wrapper-class
                                    :condition-itself condition
                                    :restarts restarts
-                                   :channel channel
                                    :stack (dissect:stack)))
            (*query-io* (if (or (and (ignore-errors (find-method #'query-read nil (list wrapper-class)))
                                     (ignore-errors (find-method #'query-write nil (list wrapper-class 'string))))
@@ -164,7 +164,9 @@ case the default `*query-io*' is used.)"
           (ui-display wrapper)))
       (unwind-protect
            ;; FIXME: Waits indefinitely. Should it?
-           (let ((restart (lparallel:receive-result channel))
+           (let ((restart (progn
+                            (bt:wait-on-semaphore (slot-value wrapper 'restart-semaphore))
+                            (slot-value wrapper 'chosen-restart)))
                  (*debugger-hook* hook))
              (invoke-restart-interactively
               (etypecase restart
@@ -180,13 +182,17 @@ case the default `*query-io*' is used.)"
 
 (defgeneric invoke (wrapper restart)
   (:method ((wrapper condition-wrapper) (restart symbol))
-    (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
+    (setf (slot-value wrapper 'chosen-restart) restart)
+    (bt:signal-semaphore (slot-value wrapper 'restart-semaphore)))
   (:method ((wrapper condition-wrapper) (restart dissect:restart))
-    (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
+    (setf (slot-value wrapper 'chosen-restart) restart)
+    (bt:signal-semaphore (slot-value wrapper 'restart-semaphore)))
   (:method ((wrapper condition-wrapper) (restart restart))
-    (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
+    (setf (slot-value wrapper 'chosen-restart) restart)
+    (bt:signal-semaphore (slot-value wrapper 'restart-semaphore)))
   (:method ((wrapper condition-wrapper) (restart function))
-    (lparallel:submit-task (slot-value wrapper 'channel) (constantly restart)))
+    (setf (slot-value wrapper 'chosen-restart) restart)
+    (bt:signal-semaphore (slot-value wrapper 'restart-semaphore)))
   (:documentation "Invoke the RESTART in the initial debugger hook of the WRAPPER.
 
 The RESTART should be one of the `restarts' of the WRAPPER. Otherwise

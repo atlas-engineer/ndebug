@@ -3,8 +3,6 @@
 
 (in-package #:ndebug/tests)
 
-(setf lparallel:*kernel* (lparallel:make-kernel 1))
-
 (defun error-with-ignore ()
   (restart-case
       (1+ "hello")
