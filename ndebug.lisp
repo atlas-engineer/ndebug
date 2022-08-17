@@ -177,8 +177,8 @@ case the default `*query-io*' is used.)"
                                        (list (eval code))
                                        (function (funcall code)))
                                   and do (setf (slot-value wrapper 'code-to-evaluate) nil)
-                                when restart
-                                  do (return restart)))
+                                else when restart
+                                       do (return restart)))
                  (*debugger-hook* hook))
              (invoke-restart-interactively
               (etypecase restart
