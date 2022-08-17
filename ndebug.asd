@@ -18,7 +18,8 @@
   :components ((:file "tests/package")
                (:file "tests/tests"))
   :perform (test-op (o c)
-                    (symbol-call :lisp-unit2 :run-tests
-                                 :package :ndebug/tests
-                                 :run-contexts (symbol-function
-                                                (read-from-string "lisp-unit2:with-summary-context")))))
+                    (let ((*debugger-hook* nil))
+                      (symbol-call :lisp-unit2 :run-tests
+                                   :package :ndebug/tests
+                                   :run-contexts (symbol-function
+                                                  (read-from-string "lisp-unit2:with-summary-context"))))))
