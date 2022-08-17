@@ -9,7 +9,8 @@
   :serial t
   :depends-on (#:dissect #:trivial-custom-debugger #:bordeaux-threads #:swank)
   :components ((:file "package")
-               (:file "ndebug")))
+               (:file "ndebug"))
+  :in-order-to ((test-op (test-op "ndebug/tests"))))
 
 (defsystem "ndebug/tests"
   :depends-on (ndebug lisp-unit2)
