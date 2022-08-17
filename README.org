@@ -19,6 +19,10 @@ NDebug has two API layers: CLOS API and a globals&functions API. The CLOS API is
 
 To make your application debugger-friendly, you have to specialize ~ui-display~, ~ui-cleanup~, ~query-read~ and ~query-write~ methods (the latter two are not required and will be replaced with ~*query-io*~ if not present). And then use the ~make-debugger-hook~ function to set the debugger.
 
+Note that there are
+- ~ndebug:invoke~ to invoke a restart for a condition,
+- and ~ndebug:evaluate~ (only works on SBCL at the moment) to evaluate the code in the context of the condition.
+
 #+begin_src lisp
   (defclass my-wrapper (ndebug:condition-wrapper)
     ((prompt-text :initform "[prompt text]"
