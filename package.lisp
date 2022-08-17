@@ -17,6 +17,7 @@
    #:ui-display
    #:ui-cleanup
    #:invoke
+   #:evaluate
    #:make-debugger-stream
    #:make-debugger-hook
    #:with-debugger-hook)

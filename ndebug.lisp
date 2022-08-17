@@ -28,6 +28,11 @@
    (chosen-restart
     :initform nil
     :documentation "The restart chosen in the interface and brought by `invoke'.")
+   (code-to-evaluate
+    :initform nil
+    :type (or list function)
+    :documentation "The code to evaluate in `evaluate'.
+Can be either a list of a zero-argument function.")
    (restart-semaphore
     :initform (bt:make-semaphore)
     :type bt:semaphore
@@ -164,9 +169,16 @@ case the default `*query-io*' is used.)"
           (ui-display wrapper)))
       (unwind-protect
            ;; FIXME: Waits indefinitely. Should it?
-           (let ((restart (progn
-                            (bt:wait-on-semaphore (slot-value wrapper 'restart-semaphore))
-                            (slot-value wrapper 'chosen-restart)))
+           (let ((restart (loop for got-something = (bt:wait-on-semaphore (slot-value wrapper 'restart-semaphore))
+                                for code = (slot-value wrapper 'code-to-evaluate)
+                                for restart = (slot-value wrapper 'chosen-restart)
+                                when code
+                                  do (typecase code
+                                       (list (eval code))
+                                       (function (funcall code)))
+                                  and do (setf (slot-value wrapper 'code-to-evaluate) nil)
+                                when restart
+                                  do (return restart)))
                  (*debugger-hook* hook))
              (invoke-restart-interactively
               (etypecase restart
@@ -197,6 +209,19 @@ case the default `*query-io*' is used.)"
 
 The RESTART should be one of the `restarts' of the WRAPPER. Otherwise
 the behavior is implementation-dependent, but never exactly pretty."))
+
+(defgeneric evaluate (wrapper code)
+  (:method ((wrapper condition-wrapper) (code list))
+    (setf (slot-value wrapper 'code-to-evaluate) code)
+    (bt:signal-semaphore (slot-value wrapper 'restart-semaphore)))
+  (:method ((wrapper condition-wrapper) (code function))
+    (setf (slot-value wrapper 'code-to-evaluate) code)
+    (bt:signal-semaphore (slot-value wrapper 'restart-semaphore)))
+  (:documentation "Evaluate the CODE in the debugger WRAPPER context.
+
+CODE can be
+- A quoted list of Lisp code, in which case it will be avaluated.
+- A function object, in which case if will be called in the context of the debugger."))
 
 (defmacro with-debugger-hook ((&key wrapper-class query-read query-write ui-display ui-cleanup)
                               &body body)
