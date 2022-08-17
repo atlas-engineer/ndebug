@@ -22,32 +22,28 @@
           do (return r)))
 
 (define-test debugger-handler-bind ()
-  (let ((*debugger-hook*
-          (ndebug:make-debugger-hook
-           :ui-display (lambda (wrapper)
-                         (ndebug:invoke
-                          wrapper
-                          (assert-true (find-restart-by-name "supersede" (ndebug:restarts wrapper))))))))
-    (uiop:with-temporary-file (:pathname p)
+  (ndebug:with-debugger-hook (:ui-display
+                              (ndebug:invoke
+                               %wrapper%
+                               (assert-true (find-restart-by-name "supersede" (ndebug:restarts %wrapper%))))))
+  (uiop:with-temporary-file (:pathname p)
+    (assert-true (uiop:file-exists-p p))
+    (assert-equal "" (uiop:read-file-string p))
+    (let ((s (open p :direction :output)))
       (assert-true (uiop:file-exists-p p))
-      (assert-equal "" (uiop:read-file-string p))
-      (let ((s (open p :direction :output)))
-        (assert-true (uiop:file-exists-p p))
-        (format s "hello")
-        (force-output s)
-        (assert-equal "hello" (uiop:read-file-string p))
-        (close s))
-      (assert-true (uiop:file-exists-p p)))))
+      (format s "hello")
+      (force-output s)
+      (assert-equal "hello" (uiop:read-file-string p))
+      (close s))
+    (assert-true (uiop:file-exists-p p))))
 
 (define-test multithreaded ()
-  (let ((*debugger-hook*
-          (ndebug:make-debugger-hook
-           :ui-display (lambda (wrapper)
-                         (bt:make-thread
-                          (lambda ()
-                            (ndebug:invoke
-                             wrapper
-                             (find-restart-by-name "ignore" (ndebug:restarts wrapper)))))))))
+  (ndebug:with-debugger-hook (:ui-display
+                              (bt:make-thread
+                               (lambda ()
+                                 (ndebug:invoke
+                                  %wrapper%
+                                  (find-restart-by-name "ignore" (ndebug:restarts %wrapper%))))))
     (assert-equal "hello1" (error-with-ignore))))
 
 (define-test with-debugger-hook-expansion ()
@@ -81,16 +77,18 @@
 
 (defvar %foo% "before debug")
 
-(define-test evaluate ()
-  (let* ((*debugger-hook*
-           (ndebug:make-debugger-hook
-            :ui-display (lambda (wrapper)
-                          (ndebug:evaluate
-                           wrapper
-                           '(setf %foo% "after debug"))
-                          (ndebug:invoke
-                           wrapper
-                           (assert-true (find-restart-by-name "supersede" (ndebug:restarts wrapper))))))))
+(define-test try-evaluate ()
+  (ndebug:with-debugger-hook (:ui-display
+                              (lambda (wrapper)
+                                (ndebug:evaluate
+                                 wrapper
+                                 (lambda ()
+                                   (format t "Setting foo to after debug~%")
+                                   (setf %foo% "after debug")))
+                                (ndebug:invoke
+                                 wrapper
+                                 (assert-true (find-restart-by-name "supersede"
+                                                                    (ndebug:restarts wrapper))))))
     (uiop:with-temporary-file (:pathname p)
       (assert-equal "before debug" %foo%)
       (assert-true (uiop:file-exists-p p))
