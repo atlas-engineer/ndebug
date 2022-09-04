@@ -5,10 +5,11 @@
   :description "A toolkit to construct interface-aware yet standard-compliant debugger hooks."
   :author "Atlas Engineer LLC"
   :license  "BSD 3-Clause"
-  :version "0.1.0"
+  :version "0.2.0"
   :serial t
-  :depends-on (#:dissect #:trivial-custom-debugger #:bordeaux-threads #:swank)
+  :depends-on (#:dissect #:trivial-custom-debugger #:bordeaux-threads #:trivial-gray-streams)
   :components ((:file "package")
+               (:file "stream")
                (:file "ndebug"))
   :in-order-to ((test-op (test-op "ndebug/tests"))))
 

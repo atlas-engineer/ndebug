@@ -87,15 +87,6 @@ Always prefers `*ui-display*' (if set) over the default method."))
   (:documentation "Part of custom debugger, called once the debugger is done.
 Always prefers `*ui-cleanup*' (if set) over the default method."))
 
-(declaim (ftype (function ((function () string) (function (string))) two-way-stream)
-                make-debugger-stream))
-(defun make-debugger-stream (input-fn output-fn)
-  "Construct a `*query-io*'-compatible stream out of INPUT-FN and OUTPUT-FN."
-  (make-two-way-stream
-   ;; FIXME: Understand/reproduce how Swank makes those streams.
-   (swank-backend:make-input-stream input-fn)
-   (swank-backend:make-output-stream output-fn)))
-
 (declaim (ftype (function (&key (:wrapper-class t)
                                 (:ui-display (or null (function (condition-wrapper))))
                                 (:ui-cleanup (or null (function (condition-wrapper))))

@@ -10,7 +10,7 @@ NDebug is pretty light on dependencies:
 - [[https://github.com/Shinmera/dissect][Dissect]].
 - [[https://github.com/phoe/trivial-custom-debugger][trivial-custom-debugger]].
 - [[https://github.com/sionescu/bordeaux-threads][Bordeaux Threads]].
-- [[https://github.com/slime/slime][Swank]].
+- [[https://github.com/trivial-gray-streams/trivial-gray-streams][Trivial Gray Streams]].
 
 ** Usage
 NDebug has two API layers: CLOS API and a globals&functions API. The CLOS API is more structured and I recommend to use it in most cases, while the globals&functions API overrides the CLOS methods and allows to customize the solid base CLOS provides. globals&functions is more REPL-friendly, so you may start your debugger with this, while transitioning to the CLOS API later.
@@ -90,7 +90,8 @@ With globals&function API you have a bit more flexibility in how you configure t
 The good thing about these API is that you can intermix those. So, you can subclass the ~ndebug:condition-wrapper~, define some methods on it and then, if there's some corner case (like needing a custom display or custom reading function), you can always provide an additional argument to ~make-debugger-hook~ to override the initial method.
 
 * To-Dos
-- [ ] Stop depending on Swank for two-way-stream construction, depend on ~trivial-gray-streams~ instead.
+- [X] Stop depending on Swank for two-way-stream construction, depend on ~trivial-gray-streams~ instead.
+  - The implementation is quite basic, but it seems to work.
 - [X] (Maybe) stop depending on Lparallel and depend on Bordeaux Thread semaphores/conditions instead.
   - Semaphores it is!
 - [ ] Better names for handlers?
