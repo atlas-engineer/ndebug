@@ -164,9 +164,10 @@ case the default `*query-io*' is used.)"
                                 for code = (slot-value wrapper 'code-to-evaluate)
                                 for restart = (slot-value wrapper 'chosen-restart)
                                 when code
-                                  do (typecase code
-                                       (list (eval code))
-                                       (function (funcall code)))
+                                  do (let ((*debugger-hook* hook))
+                                       (typecase code
+                                         (list (eval code))
+                                         (function (funcall code))))
                                   and do (setf (slot-value wrapper 'code-to-evaluate) nil)
                                 else when restart
                                        do (return restart)))
