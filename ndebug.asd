@@ -19,8 +19,13 @@
   :components ((:file "tests/package")
                (:file "tests/tests"))
   :perform (test-op (o c)
-                    (let ((*debugger-hook* nil))
-                      (symbol-call :lisp-unit2 :run-tests
-                                   :package :ndebug/tests
-                                   :run-contexts (symbol-function
-                                                  (read-from-string "lisp-unit2:with-summary-context"))))))
+                    (let* ((*debugger-hook* nil)
+                           (test-results (symbol-call :lisp-unit2 :run-tests
+                                                      :package :ndebug/tests
+                                                      :run-contexts (symbol-function
+                                                                     (read-from-string "lisp-unit2:with-summary-context")))))
+                      (when (or
+                             (uiop:symbol-call :lisp-unit2 :failed test-results)
+                             (uiop:symbol-call :lisp-unit2 :errors test-results))
+                        ;; Arbitrary but hopefully recognizable exit code.
+                        (quit 18)))))
