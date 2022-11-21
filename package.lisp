@@ -68,5 +68,3 @@ that you can provide your own wrapper class instead of
 `ndebug:with-debugger-hook' is a thin wrapper around
 `ndebug:make-debugger-hook' to bind the debugger hook to the generated
 function for the duration of the body."))
-
-(push :ndebug *features*)
