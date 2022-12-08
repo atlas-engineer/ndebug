@@ -20,17 +20,14 @@ This string is then used for all the input operations.")
   (setf (input stream) (funcall (input-fn stream))))
 
 (defmethod trivial-gray-streams:stream-read-char ((stream debugger-input-stream))
-  (if (or (= (index stream) (length (input stream)))
-          (zerop (length (input stream))))
-      (prog1
-          (unless (eql #\Newline
-                       (char (input stream) (1- (length (input stream)))))
-            #\Newline)
-        (setf (input stream) (funcall (input-fn stream))
-              (index stream) 0))
-      (prog1
-          (char (input stream) (index stream))
-        (incf (index stream)))))
+  (when (= (index stream) (length (input stream)))
+    (setf (input stream) (funcall (input-fn stream))
+          (index stream) 0)
+    (when (uiop:emptyp (input stream))
+      (return-from trivial-gray-streams:stream-read-char :eof)))
+  (prog1
+      (char (input stream) (index stream))
+    (incf (index stream))))
 
 (defmethod trivial-gray-streams:stream-listen ((stream debugger-input-stream))
   (< (index stream) (length (input stream))))
