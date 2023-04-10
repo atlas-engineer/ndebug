@@ -26,3 +26,7 @@
 	path = _build/trivial-garbage
 	url = https://github.com/trivial-garbage/trivial-garbage
 	shallow = true
+[submodule "_build/lisp-unit2"]
+	path = _build/lisp-unit2
+	url = https://github.com/AccelerationNet/lisp-unit2
+	shallow = true
