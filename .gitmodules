@@ -18,3 +18,7 @@
 	path = _build/bordeaux-threads
 	url = https://github.com/sionescu/bordeaux-threads
 	shallow = true
+[submodule "_build/global-vars"]
+	path = _build/global-vars
+	url = https://github.com/lmj/global-vars
+	shallow = true
