@@ -22,3 +22,7 @@
 	path = _build/global-vars
 	url = https://github.com/lmj/global-vars
 	shallow = true
+[submodule "_build/trivial-garbage"]
+	path = _build/trivial-garbage
+	url = https://github.com/trivial-garbage/trivial-garbage
+	shallow = true
