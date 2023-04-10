@@ -30,3 +30,11 @@
 	path = _build/lisp-unit2
 	url = https://github.com/AccelerationNet/lisp-unit2
 	shallow = true
+[submodule "_build/cl-interpol"]
+	path = _build/cl-interpol
+	url = https://github.com/edicl/cl-interpol
+	shallow = true
+[submodule "_build/cl-unicode"]
+	path = _build/cl-unicode
+	url = https://github.com/edicl/cl-unicode
+	shallow = true
