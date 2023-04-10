@@ -1,0 +1,20 @@
+[submodule "_build/alexandria"]
+	path = _build/alexandria
+	url = https://gitlab.common-lisp.net/alexandria/alexandria.git
+	shallow = true
+[submodule "_build/dissect"]
+	path = _build/dissect
+	url = https://github.com/Shinmera/dissect
+	shallow = true
+[submodule "_build/trivial-custom-debugger"]
+	path = _build/trivial-custom-debugger
+	url = https://github.com/phoe/trivial-custom-debugger
+	shallow = true
+[submodule "_build/trivial-gray-streams"]
+	path = _build/trivial-gray-streams
+	url = https://github.com/trivial-gray-streams/trivial-gray-streams
+	shallow = true
+[submodule "_build/bordeaux-threads"]
+	path = _build/bordeaux-threads
+	url = https://github.com/sionescu/bordeaux-threads
+	shallow = true

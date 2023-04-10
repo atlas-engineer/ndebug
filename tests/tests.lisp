@@ -3,6 +3,8 @@
 
 (in-package #:ndebug/tests)
 
+(setf *debugger-hook* nil)
+
 (defvar what "hello")
 
 (defun error-with-ignore ()
@@ -25,17 +27,17 @@
   (ndebug:with-debugger-hook (:ui-display
                               (ndebug:invoke
                                %wrapper%
-                               (assert-true (find-restart-by-name "supersede" (ndebug:restarts %wrapper%))))))
-  (uiop:with-temporary-file (:pathname p)
-    (assert-true (uiop:file-exists-p p))
-    (assert-equal "" (uiop:read-file-string p))
-    (let ((s (open p :direction :output)))
+                               (assert-true (find-restart-by-name "supersede" (ndebug:restarts %wrapper%)))))
+    (uiop:with-temporary-file (:pathname p)
       (assert-true (uiop:file-exists-p p))
-      (format s "hello")
-      (force-output s)
-      (assert-equal "hello" (uiop:read-file-string p))
-      (close s))
-    (assert-true (uiop:file-exists-p p))))
+      (assert-equal "" (uiop:read-file-string p))
+      (let ((s (open p :direction :output)))
+        (assert-true (uiop:file-exists-p p))
+        (format s "hello")
+        (force-output s)
+        (assert-equal "hello" (uiop:read-file-string p))
+        (close s))
+      (assert-true (uiop:file-exists-p p)))))
 
 (define-test multithreaded ()
   (ndebug:with-debugger-hook (:ui-display

@@ -11,21 +11,26 @@
   :components ((:file "package")
                (:file "stream")
                (:file "ndebug"))
-  :in-order-to ((test-op (test-op "ndebug/tests"))))
+  :in-order-to ((test-op (test-op "ndebug/tests")
+                         (test-op "ndebug/tests/compilation"))))
+
+(defsystem "ndebug/submodules"
+  :defsystem-depends-on ("nasdf")
+  :class :nasdf-submodule-system)
 
 (defsystem "ndebug/tests"
-  :depends-on (ndebug lisp-unit2)
+  :defsystem-depends-on ("nasdf")
+  :class :nasdf-test-system
+  :depends-on ("ndebug")
+  :targets (:package :ndebug/tests)
   :serial t
-  :components ((:file "tests/package")
-               (:file "tests/tests"))
-  :perform (test-op (o c)
-                    (let* ((*debugger-hook* nil)
-                           (test-results (symbol-call :lisp-unit2 :run-tests
-                                                      :package :ndebug/tests
-                                                      :run-contexts (symbol-function
-                                                                     (read-from-string "lisp-unit2:with-summary-context")))))
-                      (when (or
-                             (uiop:symbol-call :lisp-unit2 :failed test-results)
-                             (uiop:symbol-call :lisp-unit2 :errors test-results))
-                        ;; Arbitrary but hopefully recognizable exit code.
-                        (quit 18)))))
+  :pathname "tests/"
+  :components ((:file "package")
+               (:file "tests")))
+
+(defsystem "ndebug/tests/compilation"
+  :defsystem-depends-on ("nasdf")
+  :class :nasdf-compilation-test-system
+  :undocumented-symbols-to-ignore (:restarts :condition-itself :stack)
+  :depends-on ("ndebug")
+  :packages (:ndebug))
