@@ -4,6 +4,9 @@
 (defsystem #:ndebug
   :description "A toolkit to construct interface-aware yet standard-compliant debugger hooks."
   :author "Atlas Engineer LLC"
+  :homepage "https://github.com/atlas-engineer/ndebug"
+  :bug-tracker "https://github.com/atlas-engineer/ndebug/issues"
+  :source-control (:git "https://github.com/atlas-engineer/ndebug.git")
   :license  "BSD 3-Clause"
   :version "0.2.0"
   :serial t
